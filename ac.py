@@ -1,14 +1,14 @@
 from collections import namedtuple
 
-COOL = 'C'
-HEAT = 'H'
-DRY = 'D'
-FAN = 'F'
+COOL = 0
+HEAT = 1
+DRY = 2
+FAN = 3
 
-LOW = 1
-MID = 2
-HIGH = 3
-AUTO = 0
+LOW = 0
+MID = 1
+HIGH = 2
+AUTO = 3
 
 MODE_MAPPING = {COOL: '1',
                 HEAT: '4',
@@ -38,7 +38,7 @@ def popcount(hex_str):
 def correct_checksum(message):
     cnt = popcount(message[:9])
     chksum = CHKSUM_CONSTANT - cnt
-    return message[:9] + '%02X'%chksum + message[12:]
+    return message[:9] + '%02X'%chksum + message[11:]
 
 def state_to_message(state):
     s = state
@@ -47,7 +47,8 @@ def state_to_message(state):
                MODE_MAPPING[s.mode],
                FAN_MAPPING[s.speed],
                '%01X'%(s.temperature - TEMP_OFFSET),
-               '0',
+               '0', '0',
+               '1' if s.turbo else '7',
                'F' if s.swing else 'A',
                '0', '0', '2', '0', '1']
     return correct_checksum(''.join(message))

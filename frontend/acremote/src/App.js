@@ -19,8 +19,12 @@ import {
   faRocket
 } from "@fortawesome/free-solid-svg-icons";
 import { faPowerOff } from "@fortawesome/free-solid-svg-icons";
-//import './App.css';
+
 import "bootstrap/dist/css/bootstrap.min.css";
+
+const { StateRequest, StateReply, Void } = require("./klima_pb.js");
+const { AirConditionerClient } = require("./klima_grpc_web_pb.js");
+//import './App.css';
 
 class ModeSelector extends React.Component {
   constructor(props) {
@@ -43,22 +47,22 @@ class ModeSelector extends React.Component {
           onChange={this.handleChange}
           className="bg-secondary w-100"
         >
-          <ToggleButton value={1}>
+          <ToggleButton value={0}>
             <FontAwesomeIcon icon={faSnowflake} />
             <br />
             COOL
           </ToggleButton>
-          <ToggleButton value={2}>
+          <ToggleButton value={1}>
             <FontAwesomeIcon icon={faSun} />
             <br />
             HEAT
           </ToggleButton>
-          <ToggleButton value={3}>
+          <ToggleButton value={2}>
             <FontAwesomeIcon icon={faFan} />
             <br />
             FAN
           </ToggleButton>
-          <ToggleButton value={4}>
+          <ToggleButton value={3}>
             <FontAwesomeIcon icon={faTint} />
             <br />
             DRY
@@ -163,10 +167,10 @@ class FanSpeedSelector extends React.Component {
           onChange={this.handleChange}
           className="bg-secondary rounded-top w-100"
         >
-          <ToggleButton value={1}>LOW</ToggleButton>
-          <ToggleButton value={2}>MID</ToggleButton>
-          <ToggleButton value={3}>HIGH</ToggleButton>
-          <ToggleButton value={4}>AUTO</ToggleButton>
+          <ToggleButton value={0}>LOW</ToggleButton>
+          <ToggleButton value={1}>MID</ToggleButton>
+          <ToggleButton value={2}>HIGH</ToggleButton>
+          <ToggleButton value={3}>AUTO</ToggleButton>
         </ToggleButtonGroup>
         <p className="text-white bg-secondary rounded-bottom w-100 text-center">
           Fan speed
@@ -273,34 +277,113 @@ class Remote extends React.Component {
     this.decrTemp = this.decrTemp.bind(this);
     this.optionsChanged = this.optionsChanged.bind(this);
     this.powerChanged = this.powerChanged.bind(this);
+    this.requestFromComponentState = this.requestFromComponentState.bind(this);
+    this.tryChangeState = this.tryChangeState.bind(this);
+    this.reflectResponse = this.reflectResponse.bind(this);
+  }
+
+  componentDidMount(){
+      var request = new Void();
+      this.props.client.getState(request, {}, (err, response)=>{
+          if(response){
+              this.reflectResponse(response);
+          }
+      });
+  }
+
+  requestFromComponentState(){
+      var request = new StateRequest();
+
+      request.setTemperature(this.state.temperature);
+      request.setMode(this.state.mode);
+      request.setSpeed(this.state.speed);
+      request.setIonizer(this.state.options.indexOf(1) >= 0);
+      request.setSwing(this.state.options.indexOf(2) >= 0);
+      request.setTurbo(this.state.options.indexOf(3) >= 0);
+      console.log(this.state.options.indexOf(3) > 0, this.state.options.indexOf(1) > 0);
+      request.setPower(this.state.power);
+      console.log(this.state.power);
+      console.log(request);
+      // this.props.client.setState(request, {}, (err, response) => console.log(err));
+      return request;
+
+  }
+
+  reflectResponse(response){
+      var options = [];
+      if(response.getIonizer())
+          options.push(1);
+      if(response.getSwing())
+          options.push(2);
+      if(response.getTurbo())
+          options.push(3);
+      console.log(response);
+
+      this.setState({mode: response.getMode()});
+      this.setState({temperature: response.getTemperature()});
+      this.setState({minTemperature: response.getMintemperature()});
+      this.setState({maxTemperature: response.getMaxtemperature()});
+      this.setState({power: response.getPower()});
+      this.setState({speed: response.getSpeed()});
+      this.setState({options: options});
+  }
+
+  tryChangeState(request){
+      this.props.client.setState(request, {}, (err, response) => {
+          if(err){
+              console.log(err);
+          } else {
+              this.reflectResponse(response);
+          }
+      });
   }
 
   modeChanged(val) {
-    this.setState({ mode: val });
+      var request = this.requestFromComponentState();
+      request.setMode(val);
+      this.tryChangeState(request);
+    // this.setState({ mode: val });
   }
 
   speedChanged(val) {
-    this.setState({ speed: val });
+      var request = this.requestFromComponentState();
+      request.setSpeed(val);
+      this.tryChangeState(request);
+    // this.setState({ speed: val });
   }
 
   incrTemp() {
     const temp = this.state.temperature;
     const maxTemp = this.state.maxTemperature;
-    this.setState({ temperature: Math.min(temp + 1, maxTemp) });
+      var request = this.requestFromComponentState();
+      request.setTemperature(Math.min(temp + 1, maxTemp));
+      this.tryChangeState(request);
+    // this.setState({ temperature: Math.min(temp + 1, maxTemp) });
   }
 
   decrTemp() {
     const temp = this.state.temperature;
     const minTemp = this.state.minTemperature;
-    this.setState({ temperature: Math.max(temp - 1, minTemp) });
+      var request = this.requestFromComponentState();
+      request.setTemperature(Math.max(temp - 1, minTemp));
+      this.tryChangeState(request);
+    // this.setState({ temperature: Math.max(temp - 1, minTemp) });
   }
 
   optionsChanged(options) {
-    this.setState({ options: options });
+      var request = this.requestFromComponentState();
+      request.setIonizer(options.indexOf(1) >= 0);
+      request.setSwing(options.indexOf(2) >= 0);
+      request.setTurbo(options.indexOf(3) >= 0);
+      this.tryChangeState(request);
+    // this.setState({ options: options });
   }
 
   powerChanged(value) {
-    this.setState({ power: value });
+      var request = this.requestFromComponentState();
+      request.setPower(value);
+      this.tryChangeState(request);
+    // this.setState({ power: value });
   }
 
   render() {
@@ -333,7 +416,8 @@ class Remote extends React.Component {
 }
 
 function App() {
-  return <Remote url="quadro" />;
+  var client = new AirConditionerClient('http://localhost:8080');
+  return <Remote client={client} />;
 }
 
 export default App;

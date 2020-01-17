@@ -11,6 +11,8 @@
     "@testing-library/user-event": "^7.1.2",
     "bootstrap": "^4.4.1",
     "fibers": "^4.0.2",
+    "google-protobuf": "^3.11.2",
+    "grpc-web": "^1.0.7",
     "jquery": "^3.4.1",
     "node-sass": "^4.13.0",
     "react": "^16.12.0",

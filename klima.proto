@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package acremote;
+
+service AirConditioner {
+  rpc SetState (StateRequest) returns (StateResponse);
+  rpc GetState (Void) returns (StateResponse);
+}
+
+message Void {};
+
+message StateRequest {
+  bool power = 1;
+  int32 temperature = 2;
+  enum Speed{
+    LOW = 0;
+    MID = 1;
+    HIGH = 2;
+    AUTO = 3;
+  }
+  Speed speed = 3;
+  enum Mode{
+    COOL = 0;
+    HEAT = 1;
+    FAN = 2;
+    DRY = 3;
+  }
+  Mode mode = 4;
+  bool swing = 5;
+  bool ionizer = 6;
+  bool turbo = 7;
+}
+
+message StateResponse {
+  bool power = 1;
+  int32 temperature = 2;
+  enum Speed{
+    LOW = 0;
+    MID = 1;
+    HIGH = 2;
+    AUTO = 3;
+  }
+  Speed speed = 3;
+  enum Mode{
+    COOL = 0;
+    HEAT = 1;
+    FAN = 2;
+    DRY = 3;
+  }
+  Mode mode = 4;
+  bool swing = 5;
+  bool ionizer = 6;
+  bool turbo = 7;
+  int32 maxTemperature = 8;
+  int32 minTemperature = 9;
+}
